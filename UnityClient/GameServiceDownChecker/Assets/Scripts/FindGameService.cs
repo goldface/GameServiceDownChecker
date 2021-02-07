@@ -217,34 +217,36 @@ public class FindGameService : MonoBehaviour
         {
             string lBaseURL = "https://play.google.com/store/apps/details?id=";
             string lRequestURL = lBaseURL + aAppInfo.PackageName;
-            UnityWebRequest lWebRequest = UnityWebRequest.Get(lRequestURL);
-            yield return lWebRequest.SendWebRequest();
-            if (string.IsNullOrEmpty(lWebRequest.error))
+            using (UnityWebRequest lWebRequest = UnityWebRequest.Get(lRequestURL))
             {
-                //Debug.Log(lWebRequest.downloadHandler.text);
-                string lRawResultText = lWebRequest.downloadHandler.text;
-                if (lRawResultText.Contains("<a itemprop=\"genre\" href=\"/store/apps/category/GAME_"))
+                yield return lWebRequest.SendWebRequest();
+                if (string.IsNullOrEmpty(lWebRequest.error))
                 {
-                    Debug.Log($"PackageName={aAppInfo.PackageName}");
-                    aAppInfo.IsGame = true;
+                    //Debug.Log(lWebRequest.downloadHandler.text);
+                    string lRawResultText = lWebRequest.downloadHandler.text;
+                    if (lRawResultText.Contains("<a itemprop=\"genre\" href=\"/store/apps/category/GAME_"))
+                    {
+                        Debug.Log($"PackageName={aAppInfo.PackageName}");
+                        aAppInfo.IsGame = true;
+                    }
+                    else
+                    {
+                        Debug.Log($"NOT GAME={aAppInfo.PackageName}");
+                        aAppInfo.IsGame = false;
+                    }
+
+                    // string lFilePath = Application.dataPath + "/WebResult.txt";
+                    // FileStream lFileStream = new FileStream(lFilePath, FileMode.Create);
+                    // StreamWriter lStreamWriter = new StreamWriter(lFileStream);
+                    // lStreamWriter.Write(lWebRequest.downloadHandler.text);
+                    // lStreamWriter.Close();
+                    // lFileStream.Close();
                 }
                 else
                 {
-                    Debug.Log($"NOT GAME={aAppInfo.PackageName}");
-                    aAppInfo.IsGame = false;
+                    Debug.Log(lWebRequest.error);
+                    aAppInfo.IsDoubtGame = true;
                 }
-
-                // string lFilePath = Application.dataPath + "/WebResult.txt";
-                // FileStream lFileStream = new FileStream(lFilePath, FileMode.Create);
-                // StreamWriter lStreamWriter = new StreamWriter(lFileStream);
-                // lStreamWriter.Write(lWebRequest.downloadHandler.text);
-                // lStreamWriter.Close();
-                // lFileStream.Close();
-            }
-            else
-            {
-                Debug.Log(lWebRequest.error);
-                aAppInfo.IsDoubtGame = true;
             }
         }
 
