@@ -30,6 +30,8 @@ public class FindGameService : MonoBehaviour
         }
     }
 
+    private const string cGoogleStoreURL = "https://play.google.com/store/apps/details?id=";
+    private const string cCategoryGameString = "<a itemprop=\"genre\" href=\"/store/apps/category/GAME_";
     public Button vFindButton;
     public Button vWebRequestTestButton;
     public Transform vContentList;
@@ -215,7 +217,7 @@ public class FindGameService : MonoBehaviour
     {
         if (string.IsNullOrEmpty(aAppInfo.PackageName) == false)
         {
-            string lBaseURL = "https://play.google.com/store/apps/details?id=";
+            string lBaseURL = cGoogleStoreURL;
             string lRequestURL = lBaseURL + aAppInfo.PackageName;
             using (UnityWebRequest lWebRequest = UnityWebRequest.Get(lRequestURL))
             {
@@ -224,7 +226,7 @@ public class FindGameService : MonoBehaviour
                 {
                     //Debug.Log(lWebRequest.downloadHandler.text);
                     string lRawResultText = lWebRequest.downloadHandler.text;
-                    if (lRawResultText.Contains("<a itemprop=\"genre\" href=\"/store/apps/category/GAME_"))
+                    if (lRawResultText.Contains(cCategoryGameString))
                     {
                         Debug.Log($"PackageName={aAppInfo.PackageName}");
                         aAppInfo.IsGame = true;
