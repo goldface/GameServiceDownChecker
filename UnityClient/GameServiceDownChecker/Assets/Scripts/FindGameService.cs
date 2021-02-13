@@ -32,11 +32,15 @@ public class FindGameService : MonoBehaviour
 
     private const string cGoogleStoreURL = "https://play.google.com/store/apps/details?id=";
     private const string cCategoryGameString = "<a itemprop=\"genre\" href=\"/store/apps/category/GAME_";
+    private const string c404NotFoundString = "404";
+    private const int cLimitRequestCount = 10;
+
     public Button vFindButton;
     public Button vWebRequestTestButton;
     public Transform vContentList;
     public Text vStatusText;
     public Text vAPIText;
+    public UIProgressPanel vUIProgressPanel;
     public string vTestURL = "";
 
     private List<CAppInfo> mAppInfoList = new List<CAppInfo>(1024);
@@ -49,6 +53,7 @@ public class FindGameService : MonoBehaviour
         Debug.Assert(vWebRequestTestButton != null);
         Debug.Assert(vContentList != null);
         Debug.Assert(vStatusText != null);
+        Debug.Assert(vUIProgressPanel != null);
         Debug.Assert(vAPIText != null);
 
         mAPILevel = getSDKInt();
@@ -57,10 +62,14 @@ public class FindGameService : MonoBehaviour
         vWebRequestTestButton.onClick.AddListener(OnClickWebRequestTestButton);
         vStatusText.text = "-준비-";
         vAPIText.text = mAPILevel.ToString();
+        vUIProgressPanel.SetVisible(false);
+        vUIProgressPanel.SetProgress(0, 0);
     }
 
     public void OnClickFindButton()
     {
+        vUIProgressPanel.SetVisible(true);
+        
         vStatusText.text = "-검사중-";
         // 내 디바이스에 설치된 패키지를 전부 얻어온다.
         _FindPackageNames();
@@ -77,12 +86,22 @@ public class FindGameService : MonoBehaviour
     private IEnumerator _CoFindApp()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        foreach (var lAppInfo in mAppInfoList)
+        Queue<CAppInfo> lAppInfoQueue = new Queue<CAppInfo>(mAppInfoList);
+        int lRequestCount = 0, lProgressCount = 0;
+        int lAppInfoQueueMaxCount = lAppInfoQueue.Count;
+        Debug.Log(lAppInfoQueueMaxCount);
+        while (lAppInfoQueue.Count > 0 && lAppInfoQueue.Peek() != null)
         {
-            yield return StartCoroutine(_WebRequest(lAppInfo));
+            vUIProgressPanel.SetProgress(lProgressCount, lAppInfoQueueMaxCount);
+            if (lRequestCount < cLimitRequestCount)
+            {
+                lRequestCount++;
+                lProgressCount++;
+                yield return StartCoroutine(_WebRequest(lAppInfoQueue.Dequeue()));
+                lRequestCount--;
+            }
         }
         
-
         while (mAppInfoList.All(d => d.IsDone) == false)
         {
             yield return null;
@@ -100,6 +119,8 @@ public class FindGameService : MonoBehaviour
         yield return null;
 #endif
 
+        vUIProgressPanel.SetVisible(false);
+        
         // 후처리
         foreach (var lAppInfo in mAppInfoList)
         {
@@ -208,7 +229,7 @@ public class FindGameService : MonoBehaviour
 #endif
     }
 
-    private IEnumerator _WebRequest(CAppInfo aAppInfo) //string aPackageName)
+    private IEnumerator _WebRequest(CAppInfo aAppInfo)
     {
         yield return StartCoroutine(_CoWebRequest(aAppInfo));
     }
@@ -222,7 +243,8 @@ public class FindGameService : MonoBehaviour
             using (UnityWebRequest lWebRequest = UnityWebRequest.Get(lRequestURL))
             {
                 yield return lWebRequest.SendWebRequest();
-                if (string.IsNullOrEmpty(lWebRequest.error))
+                string lWebRequestErrorString = lWebRequest.error;
+                if (string.IsNullOrEmpty(lWebRequestErrorString))
                 {
                     //Debug.Log(lWebRequest.downloadHandler.text);
                     string lRawResultText = lWebRequest.downloadHandler.text;
@@ -244,10 +266,15 @@ public class FindGameService : MonoBehaviour
                     // lStreamWriter.Close();
                     // lFileStream.Close();
                 }
+                else if (lWebRequestErrorString.Contains(c404NotFoundString)) 
+                {
+                    Debug.Log(lWebRequestErrorString);
+                    aAppInfo.IsDoubtGame = true;
+                }
                 else
                 {
-                    Debug.Log(lWebRequest.error);
-                    aAppInfo.IsDoubtGame = true;
+                    // 여긴 진짜 에러
+                    Debug.LogError(lWebRequestErrorString);
                 }
             }
         }
