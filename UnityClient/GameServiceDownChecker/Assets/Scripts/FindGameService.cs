@@ -33,10 +33,15 @@ public class FindGameService : MonoBehaviour
     private const string cGoogleStoreURL = "https://play.google.com/store/apps/details?id=";
     private const string cCategoryGameString = "<a itemprop=\"genre\" href=\"/store/apps/category/GAME_";
     private const string c404NotFoundString = "404";
-    private const int cLimitRequestCount = 10;
+    private const string cRequestCountString = "최대 요청 수 :";
+    //public UIFindGameService vUIFindGameService;
 
+    public GameObject vMainMenu;
+    public GameObject vResult;
     public Button vFindButton;
     public Button vWebRequestTestButton;
+    public Slider vRequestCountSlider;
+    public Text vRequestCountText; 
     public Transform vContentList;
     public Text vStatusText;
     public Text vAPIText;
@@ -45,21 +50,30 @@ public class FindGameService : MonoBehaviour
 
     private List<CAppInfo> mAppInfoList = new List<CAppInfo>(1024);
     private GameObject mPrefabAppInfo = null;
+    private int mLimitRequestCount = 10;
     private int mAPILevel = 0;
 
     void Awake()
     {
+        Debug.Assert(vMainMenu != null);
+        Debug.Assert(vResult != null);
         Debug.Assert(vFindButton != null);
         Debug.Assert(vWebRequestTestButton != null);
+        Debug.Assert(vRequestCountSlider != null);
+        Debug.Assert(vRequestCountText != null);
         Debug.Assert(vContentList != null);
         Debug.Assert(vStatusText != null);
         Debug.Assert(vUIProgressPanel != null);
         Debug.Assert(vAPIText != null);
 
+        vMainMenu.SetActive(true);
+        vResult.SetActive(false);
         mAPILevel = getSDKInt();
         mPrefabAppInfo = Resources.Load<GameObject>("AppInfo");
         vFindButton.onClick.AddListener(OnClickFindButton);
         vWebRequestTestButton.onClick.AddListener(OnClickWebRequestTestButton);
+        vRequestCountSlider.onValueChanged.AddListener(OnValueChangedRequestCountSlider);
+        OnValueChangedRequestCountSlider(10);
         vStatusText.text = "-준비-";
         vAPIText.text = mAPILevel.ToString();
         vUIProgressPanel.SetVisible(false);
@@ -69,6 +83,7 @@ public class FindGameService : MonoBehaviour
     public void OnClickFindButton()
     {
         vUIProgressPanel.SetVisible(true);
+        vMainMenu.SetActive(false);
         
         vStatusText.text = "-검사중-";
         // 내 디바이스에 설치된 패키지를 전부 얻어온다.
@@ -83,6 +98,12 @@ public class FindGameService : MonoBehaviour
         StartCoroutine(_CoWebRequestTest());
     }
 
+    public void OnValueChangedRequestCountSlider(float aValue)
+    {
+        vRequestCountText.text = $"{cRequestCountString}{aValue.ToString()}";
+        mLimitRequestCount = (int)aValue;
+    }
+
     private IEnumerator _CoFindApp()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -93,7 +114,7 @@ public class FindGameService : MonoBehaviour
         while (lAppInfoQueue.Count > 0 && lAppInfoQueue.Peek() != null)
         {
             vUIProgressPanel.SetProgress(lProgressCount, lAppInfoQueueMaxCount);
-            if (lRequestCount < cLimitRequestCount)
+            if (lRequestCount < mLimitRequestCount)
             {
                 lRequestCount++;
                 lProgressCount++;
