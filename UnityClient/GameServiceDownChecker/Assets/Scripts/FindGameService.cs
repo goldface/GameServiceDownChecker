@@ -46,6 +46,8 @@ public class FindGameService : MonoBehaviour
     public Text vStatusText;
     public Text vAPIText;
     public UIProgressPanel vUIProgressPanel;
+    public Button vReturnMainMenuButton;
+    public Button vSelectViewHideButton;
     public string vTestURL = "";
 
     private List<CAppInfo> mAppInfoList = new List<CAppInfo>(1024);
@@ -64,6 +66,8 @@ public class FindGameService : MonoBehaviour
         Debug.Assert(vContentList != null);
         Debug.Assert(vStatusText != null);
         Debug.Assert(vUIProgressPanel != null);
+        Debug.Assert(vReturnMainMenuButton != null);
+        Debug.Assert(vSelectViewHideButton != null);
         Debug.Assert(vAPIText != null);
 
         vMainMenu.SetActive(true);
@@ -73,6 +77,8 @@ public class FindGameService : MonoBehaviour
         vFindButton.onClick.AddListener(OnClickFindButton);
         vWebRequestTestButton.onClick.AddListener(OnClickWebRequestTestButton);
         vRequestCountSlider.onValueChanged.AddListener(OnValueChangedRequestCountSlider);
+        vReturnMainMenuButton.onClick.AddListener(OnClickReturnMainMenuButton);
+        vSelectViewHideButton.onClick.AddListener(OnClickSelectViewHideButton);
         OnValueChangedRequestCountSlider(10);
         vStatusText.text = "-준비-";
         vAPIText.text = mAPILevel.ToString();
@@ -102,6 +108,24 @@ public class FindGameService : MonoBehaviour
     {
         vRequestCountText.text = $"{cRequestCountString}{aValue.ToString()}";
         mLimitRequestCount = (int)aValue;
+    }
+
+    public void OnClickReturnMainMenuButton()
+    {
+        vMainMenu.SetActive(true);
+        vUIProgressPanel.SetVisible(false);
+        vResult.SetActive(false);
+
+        foreach (Transform child in vContentList.transform)
+        {
+            DestroyImmediate(child.gameObject);
+        }
+    }
+
+    public void OnClickSelectViewHideButton()
+    {
+        // 미구현
+        Debug.LogError("미구현");
     }
 
     private IEnumerator _CoFindApp()
@@ -141,6 +165,8 @@ public class FindGameService : MonoBehaviour
 #endif
 
         vUIProgressPanel.SetVisible(false);
+        vMainMenu.SetActive(false);
+        vResult.SetActive(true);
         
         // 후처리
         foreach (var lAppInfo in mAppInfoList)
