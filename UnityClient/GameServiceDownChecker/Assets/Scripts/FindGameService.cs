@@ -112,14 +112,14 @@ public class FindGameService : MonoBehaviour
 
     public void OnClickReturnMainMenuButton()
     {
+        foreach (Transform child in vContentList)
+        {
+            Destroy(child.gameObject);
+        }
         vMainMenu.SetActive(true);
         vUIProgressPanel.SetVisible(false);
         vResult.SetActive(false);
 
-        foreach (Transform child in vContentList.transform)
-        {
-            DestroyImmediate(child.gameObject);
-        }
     }
 
     public void OnClickSelectViewHideButton()
@@ -196,7 +196,7 @@ public class FindGameService : MonoBehaviour
     private void _FindPackageNames()
     {
         Debug.Log("_FindPackageNames");
-
+        mAppInfoList.Clear();
 #if UNITY_ANDROID && !UNITY_EDITOR
         string[] appNames;
         string[] packageNames;
@@ -226,6 +226,7 @@ public class FindGameService : MonoBehaviour
                 {
                     AndroidJavaObject lInstallSourceInfo = pm.Call<AndroidJavaObject>("getInstallSourceInfo", packageNames[i]);
                     lInstallerPackageName = lInstallSourceInfo.Call<string>("getInitiatingPackageName");
+                    lInstallSourceInfo.Dispose();
                 }
                 else
                 {
